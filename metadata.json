@@ -1,0 +1,8 @@
+{
+  "name": "Remix LocalMarket Ghumarwin",
+  "description": "Hyperlocal marketplace and smart pickup app for Ghumarwin merchants, groceries, bakeries, and local stores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

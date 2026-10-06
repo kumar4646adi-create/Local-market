@@ -1,0 +1,269 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.:]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Retailer document validation helper
+    function isValidRetailer(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.category is string && data.category.size() <= 50
+        && data.address is string && data.address.size() <= 300
+        && data.area is string && data.area.size() <= 100
+        && data.city is string && data.city.size() <= 100
+        && data.district is string && data.district.size() <= 100
+        && data.state is string && data.state.size() <= 100
+        && data.latitude is number && data.latitude >= -90.0 && data.latitude <= 90.0
+        && data.longitude is number && data.longitude >= -180.0 && data.longitude <= 180.0
+        && data.locationConfirmed is bool
+        && (!('averageRating' in data) || (data.averageRating is number && data.averageRating >= 0 && data.averageRating <= 5))
+        && (!('totalRatings' in data) || (data.totalRatings is number && data.totalRatings >= 0));
+    }
+
+    // 2. Order document validation helper
+    function isValidOrder(data) {
+      return data.orderNumber is string && data.orderNumber.size() <= 30
+        && data.storeId is string && data.storeId.size() <= 128
+        && data.storeName is string && data.storeName.size() <= 100
+        && data.totalAmount is number && data.totalAmount >= 0
+        && data.status in ['placed', 'confirmed', 'packing', 'ready', 'completed', 'cancelled']
+        && data.type in ['smart_pickup', 'home_delivery']
+        && data.pickupOtp is string && data.pickupOtp.size() <= 10;
+    }
+
+    // 3. Store Review validation helper
+    function isValidStoreReview(data) {
+      return data.storeId is string && data.storeId.size() > 0 && data.storeId.size() <= 128
+        && data.customerId is string && data.customerId.size() > 0 && data.customerId.size() <= 128
+        && data.orderId is string && data.orderId.size() > 0 && data.orderId.size() <= 128
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && (!('review' in data) || (data.review is string && data.review.size() <= 1000));
+    }
+
+    // 4. Product Review validation helper
+    function isValidProductReview(data) {
+      return data.productId is string && data.productId.size() > 0 && data.productId.size() <= 128
+        && data.storeId is string && data.storeId.size() > 0 && data.storeId.size() <= 128
+        && data.customerId is string && data.customerId.size() > 0 && data.customerId.size() <= 128
+        && data.orderId is string && data.orderId.size() > 0 && data.orderId.size() <= 128
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && (!('review' in data) || (data.review is string && data.review.size() <= 1000));
+    }
+
+    // 5. Product Doc validation helper
+    function isValidProductDoc(data) {
+      return data.productId is string && data.productId.size() > 0 && data.productId.size() <= 128
+        && data.storeId is string && data.storeId.size() > 0 && data.storeId.size() <= 128
+        && data.averageRating is number && data.averageRating >= 0 && data.averageRating <= 5
+        && data.totalRatings is number && data.totalRatings >= 0;
+    }
+
+    // 6. Favorite Store validation helper
+    function isValidFavoriteStore(data, storeId) {
+      return data.storeId is string && data.storeId == storeId
+        && data.storeName is string && data.storeName.size() <= 100;
+    }
+
+    // 7. Store Search History validation helper
+    function isValidStoreSearch(data, searchId) {
+      return data.searchId is string && data.searchId == searchId
+        && data.storeId is string && data.storeId.size() > 0 && data.storeId.size() <= 128
+        && data.storeName is string && data.storeName.size() <= 100
+        && data.searchedAt is string && data.searchedAt.size() <= 60;
+    }
+
+    // 8. Recently Viewed Store validation helper
+    function isValidRecentStore(data, storeId) {
+      return data.storeId is string && data.storeId == storeId
+        && data.storeName is string && data.storeName.size() <= 100
+        && data.viewedAt is string && data.viewedAt.size() <= 60;
+    }
+
+    // 7. Automation Event validation helper (Clean Make.com architecture)
+    function isValidAutomationEvent(data, eventId) {
+      return data.eventId is string && data.eventId == eventId
+        && data.eventType in [
+          'order.created',
+          'order.accepted',
+          'order.preparing',
+          'order.ready',
+          'customer.arrived',
+          'order.completed',
+          'order.cancelled',
+          'inventory.stock_low',
+          'inventory.stock_zero',
+          'merchant.approved',
+          'message.received',
+          'appointment.created',
+          'appointment.reminder',
+          'merchant.daily_sales_summary'
+        ]
+        && data.merchantId is string && data.merchantId.size() <= 128
+        && data.timestamp is string && data.timestamp.size() <= 60
+        && data.status in ['pending', 'emitted', 'processed', 'failed']
+        && data.processed is bool;
+    }
+
+    // 4. Inventory item validation helper
+    function isValidInventory(data) {
+      return data.storeId is string && data.storeId.size() <= 128
+        && data.productId is string && data.productId.size() <= 128
+        && data.productName is string && data.productName.size() <= 150
+        && data.stockQuantity is number && data.stockQuantity >= 0
+        && data.lowStockThreshold is number && data.lowStockThreshold >= 0
+        && data.inStock is bool;
+    }
+
+    // 5. Appointment validation helper
+    function isValidAppointment(data) {
+      return data.storeId is string && data.storeId.size() <= 128
+        && data.storeName is string && data.storeName.size() <= 100
+        && data.customerId is string && data.customerId.size() <= 128
+        && data.customerName is string && data.customerName.size() <= 100
+        && data.serviceType is string && data.serviceType.size() <= 100
+        && data.date is string && data.date.size() <= 30
+        && data.timeSlot is string && data.timeSlot.size() <= 30
+        && data.status in ['scheduled', 'reminded', 'completed', 'cancelled'];
+    }
+
+    // 6. Chat Message validation helper
+    function isValidChatMessage(data) {
+      return data.storeId is string && data.storeId.size() <= 128
+        && data.customerId is string && data.customerId.size() <= 128
+        && data.sender in ['user', 'merchant']
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 2000
+        && data.timestamp is string && data.timestamp.size() <= 60;
+    }
+
+    // 7. Daily Summary validation helper
+    function isValidDailySummary(data) {
+      return data.storeId is string && data.storeId.size() <= 128
+        && data.date is string && data.date.size() <= 20
+        && data.totalOrders is number && data.totalOrders >= 0
+        && data.completedOrders is number && data.completedOrders >= 0
+        && data.totalRevenue is number && data.totalRevenue >= 0;
+    }
+
+    // Connection test endpoint
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Retailers collection
+    match /retailers/{retailerId} {
+      allow get, list: if isValidId(retailerId);
+      allow create: if isValidId(retailerId) && isValidRetailer(incoming());
+      allow update: if isValidId(retailerId) && isValidRetailer(incoming());
+      allow delete: if false;
+    }
+
+    // Orders collection (Customer accesses own order history)
+    match /orders/{orderId} {
+      allow get, list: if isValidId(orderId) && (request.auth == null || resource.data.customerId == request.auth.uid || request.auth.uid in ['cust-aditya-kumar']);
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow update: if isValidId(orderId) && isValidOrder(incoming());
+      allow delete: if false;
+    }
+
+    // Store Reviews collection (Publicly readable, customers manage only their own reviews)
+    match /storeReviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isValidId(reviewId) && isValidStoreReview(incoming()) && (request.auth == null || request.auth.uid == incoming().customerId);
+      allow update: if isValidId(reviewId) && isValidStoreReview(incoming()) && (request.auth == null || (request.auth.uid == existing().customerId && request.auth.uid == incoming().customerId));
+      allow delete: if request.auth == null || request.auth.uid == existing().customerId;
+    }
+
+    // Product Reviews collection (Publicly readable, customers manage only their own reviews)
+    match /productReviews/{reviewId} {
+      allow get, list: if true;
+      allow create: if isValidId(reviewId) && isValidProductReview(incoming()) && (request.auth == null || request.auth.uid == incoming().customerId);
+      allow update: if isValidId(reviewId) && isValidProductReview(incoming()) && (request.auth == null || (request.auth.uid == existing().customerId && request.auth.uid == incoming().customerId));
+      allow delete: if request.auth == null || request.auth.uid == existing().customerId;
+    }
+
+    // Product Aggregate Docs
+    match /products/{productId} {
+      allow get, list: if isValidId(productId);
+      allow create, update: if isValidId(productId) && isValidProductDoc(incoming());
+      allow delete: if false;
+    }
+
+    // Customer Favorite Stores (Customers manage only their own favorite stores)
+    match /customers/{customerId}/favoriteStores/{storeId} {
+      allow get, list: if isValidId(customerId) && (request.auth == null || request.auth.uid == customerId);
+      allow create, update: if isValidId(customerId) && isValidId(storeId) && isValidFavoriteStore(incoming(), storeId) && (request.auth == null || request.auth.uid == customerId);
+      allow delete: if isValidId(customerId) && isValidId(storeId) && (request.auth == null || request.auth.uid == customerId);
+    }
+
+    // Customer Search History (Customer can read, create, update, and clear their own history)
+    match /customers/{customerId}/storeSearchHistory/{searchId} {
+      allow get, list: if isValidId(customerId) && (request.auth == null || request.auth.uid == customerId);
+      allow create, update: if isValidId(customerId) && isValidId(searchId) && isValidStoreSearch(incoming(), searchId) && (request.auth == null || request.auth.uid == customerId);
+      allow delete: if isValidId(customerId) && isValidId(searchId) && (request.auth == null || request.auth.uid == customerId);
+    }
+
+    // Customer Recently Viewed Stores
+    match /customers/{customerId}/recentStores/{storeId} {
+      allow get, list: if isValidId(customerId) && (request.auth == null || request.auth.uid == customerId);
+      allow create, update: if isValidId(customerId) && isValidId(storeId) && isValidRecentStore(incoming(), storeId) && (request.auth == null || request.auth.uid == customerId);
+      allow delete: if isValidId(customerId) && isValidId(storeId) && (request.auth == null || request.auth.uid == customerId);
+    }
+
+    // Automation Events stream (Make.com consumable)
+    match /automation_events/{eventId} {
+      allow get, list: if isValidId(eventId);
+      allow create: if isValidId(eventId) && isValidAutomationEvent(incoming(), eventId);
+      allow update: if isValidId(eventId) && isValidAutomationEvent(incoming(), eventId);
+      allow delete: if false;
+    }
+
+    // Inventory collection
+    match /inventory/{inventoryId} {
+      allow get, list: if isValidId(inventoryId);
+      allow create: if isValidId(inventoryId) && isValidInventory(incoming());
+      allow update: if isValidId(inventoryId) && isValidInventory(incoming());
+      allow delete: if false;
+    }
+
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      allow get, list: if isValidId(appointmentId);
+      allow create: if isValidId(appointmentId) && isValidAppointment(incoming());
+      allow update: if isValidId(appointmentId) && isValidAppointment(incoming());
+      allow delete: if false;
+    }
+
+    // Chat messages collection
+    match /chat_messages/{messageId} {
+      allow get, list: if isValidId(messageId);
+      allow create: if isValidId(messageId) && isValidChatMessage(incoming());
+      allow update: if isValidId(messageId) && isValidChatMessage(incoming());
+      allow delete: if false;
+    }
+
+    // Daily Sales Summaries collection
+    match /daily_summaries/{summaryId} {
+      allow get, list: if isValidId(summaryId);
+      allow create: if isValidId(summaryId) && isValidDailySummary(incoming());
+      allow update: if isValidId(summaryId) && isValidDailySummary(incoming());
+      allow delete: if false;
+    }
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

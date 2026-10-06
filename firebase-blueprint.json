@@ -1,0 +1,711 @@
+{
+  "entities": {
+    "Retailer": {
+      "title": "Retailer",
+      "description": "A verified physical merchant in Ghumarwin with confirmed geographical coordinates and approval status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for retailer"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the store",
+          "maxLength": 100
+        },
+        "storeName": {
+          "type": "string",
+          "description": "Registered business name",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "description": "Primary store category (Grocery, Bakery, Pharmacy, etc.)",
+          "maxLength": 50
+        },
+        "subcategories": {
+          "type": "string",
+          "description": "Secondary tags and specialties",
+          "maxLength": 200
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical storefront address in Ghumarwin",
+          "maxLength": 300
+        },
+        "area": {
+          "type": "string",
+          "description": "Bazaar locality or neighborhood",
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "description": "City or town",
+          "maxLength": 100
+        },
+        "district": {
+          "type": "string",
+          "description": "District in Himachal Pradesh",
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "description": "State name",
+          "maxLength": 100
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Real GPS latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Real GPS longitude coordinate"
+        },
+        "locationConfirmed": {
+          "type": "boolean",
+          "description": "Whether the merchant has confirmed their physical storefront on Google Maps"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Merchant contact phone number",
+          "maxLength": 20
+        },
+        "timing": {
+          "type": "string",
+          "description": "Operating hours",
+          "maxLength": 100
+        },
+        "smartPickup": {
+          "type": "boolean",
+          "description": "Whether Smart Pickup service is active"
+        },
+        "isOpen": {
+          "type": "boolean",
+          "description": "Current open/closed status"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Customer average rating score"
+        },
+        "reviewsCount": {
+          "type": "number",
+          "description": "Total reviews count"
+        },
+        "averageRating": {
+          "type": "number",
+          "description": "Recalculated average rating score for store"
+        },
+        "totalRatings": {
+          "type": "number",
+          "description": "Total number of store ratings received"
+        },
+        "approvalStatus": {
+          "type": "string",
+          "description": "Merchant registration approval status",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "approvedAt": {
+          "type": "string",
+          "description": "ISO timestamp of merchant approval"
+        }
+      },
+      "required": ["name", "category", "address", "area", "city", "district", "state", "latitude", "longitude", "locationConfirmed"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order for Smart Pickup or local delivery.",
+      "type": "object",
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "storeAddress": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "customerName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "customerPhone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "totalAmount": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["placed", "confirmed", "packing", "ready", "completed", "cancelled"]
+        },
+        "type": {
+          "type": "string",
+          "enum": ["smart_pickup", "home_delivery"]
+        },
+        "orderTime": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "estimatedReadyTime": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "pickupOtp": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "customerArrivedAtCounter": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": ["orderNumber", "storeId", "storeName", "totalAmount", "status", "type", "pickupOtp"]
+    },
+    "AutomationEvent": {
+      "title": "AutomationEvent",
+      "description": "Standardized event document consumed by external automation engines (Make.com, webhooks, Cloud Functions) with idempotency.",
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "description": "Specific automation event name",
+          "enum": [
+            "order.created",
+            "order.accepted",
+            "order.preparing",
+            "order.ready",
+            "customer.arrived",
+            "order.completed",
+            "order.cancelled",
+            "inventory.stock_low",
+            "inventory.stock_zero",
+            "merchant.approved",
+            "message.received",
+            "appointment.created",
+            "appointment.reminder",
+            "merchant.daily_sales_summary"
+          ]
+        },
+        "eventId": {
+          "type": "string",
+          "description": "Unique idempotent event identifier matching document ID",
+          "maxLength": 128
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Associated order ID if applicable",
+          "maxLength": 128
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Associated customer ID if applicable",
+          "maxLength": 128
+        },
+        "merchantId": {
+          "type": "string",
+          "description": "Associated merchant store ID",
+          "maxLength": 128
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Event trigger timestamp in Asia/Kolkata timezone (ISO format with +05:30 offset)",
+          "maxLength": 60
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle state of the automation event",
+          "enum": ["pending", "emitted", "processed", "failed"]
+        },
+        "payload": {
+          "type": "object",
+          "description": "Structured domain event payload"
+        },
+        "processed": {
+          "type": "boolean",
+          "description": "Whether the event has been successfully consumed by Make.com / automation platform"
+        },
+        "processedAt": {
+          "type": "string",
+          "description": "ISO timestamp in Asia/Kolkata when consumed",
+          "maxLength": 60
+        }
+      },
+      "required": ["eventType", "eventId", "merchantId", "timestamp", "status", "processed"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Stock tracking record for a merchant product in Ghumarwin.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "productId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "productName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "price": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "stockQuantity": {
+          "type": "number",
+          "description": "Current available quantity in units"
+        },
+        "lowStockThreshold": {
+          "type": "number",
+          "description": "Threshold at which stock_low event triggers"
+        },
+        "inStock": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "productId", "productName", "stockQuantity", "lowStockThreshold", "inStock"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Store appointment / consultation booking between customer and merchant.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "customerName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "customerPhone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "serviceType": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "timeSlot": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "reminded", "completed", "cancelled"]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "storeName", "customerId", "customerName", "serviceType", "date", "timeSlot", "status"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Direct message exchanged between customer and merchant.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "sender": {
+          "type": "string",
+          "enum": ["user", "merchant"]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "customerId", "sender", "text", "timestamp"]
+    },
+    "DailySummary": {
+      "title": "DailySummary",
+      "description": "Daily merchant revenue and fulfillment aggregation in Asia/Kolkata timezone.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "date": {
+          "type": "string",
+          "description": "Summary date formatted as YYYY-MM-DD in Asia/Kolkata timezone",
+          "maxLength": 20
+        },
+        "totalOrders": {
+          "type": "number"
+        },
+        "completedOrders": {
+          "type": "number"
+        },
+        "cancelledOrders": {
+          "type": "number"
+        },
+        "totalRevenue": {
+          "type": "number"
+        },
+        "pickupOrdersCount": {
+          "type": "number"
+        },
+        "deliveryOrdersCount": {
+          "type": "number"
+        },
+        "generatedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "date", "totalOrders", "completedOrders", "totalRevenue"]
+    },
+    "StoreReview": {
+      "title": "StoreReview",
+      "description": "Customer rating and review for a store after completing an order.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string",
+          "description": "Store ID being rated",
+          "maxLength": 128
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Authenticated customer ID submitting review",
+          "maxLength": 128
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Completed order ID associated with review",
+          "maxLength": 128
+        },
+        "rating": {
+          "type": "number",
+          "description": "1 to 5 star rating"
+        },
+        "review": {
+          "type": "string",
+          "description": "Optional written review comment",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when review was created",
+          "maxLength": 60
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp when review was last updated",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "customerId", "orderId", "rating", "createdAt", "updatedAt"]
+    },
+    "ProductReview": {
+      "title": "ProductReview",
+      "description": "Customer rating and review for a product purchased in a completed order.",
+      "type": "object",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "Product ID being reviewed",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "description": "Store ID from which product was purchased",
+          "maxLength": 128
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Authenticated customer ID submitting review",
+          "maxLength": 128
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Completed order ID",
+          "maxLength": 128
+        },
+        "rating": {
+          "type": "number",
+          "description": "1 to 5 star rating"
+        },
+        "review": {
+          "type": "string",
+          "description": "Optional written review comment",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when review was created",
+          "maxLength": 60
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp when review was last updated",
+          "maxLength": 60
+        }
+      },
+      "required": ["productId", "storeId", "customerId", "orderId", "rating", "createdAt", "updatedAt"]
+    },
+    "ProductDoc": {
+      "title": "ProductDoc",
+      "description": "Product aggregate rating score and metrics in Firestore.",
+      "type": "object",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "averageRating": {
+          "type": "number"
+        },
+        "totalRatings": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["productId", "storeId", "averageRating", "totalRatings"]
+    },
+    "FavoriteStore": {
+      "title": "FavoriteStore",
+      "description": "Customer favorited store entry saved in Firestore.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "image": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "area": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "addedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "storeName", "addedAt"]
+    },
+    "StoreSearch": {
+      "title": "StoreSearch",
+      "description": "Customer store search history record.",
+      "type": "object",
+      "properties": {
+        "searchId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "storeImage": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "searchQuery": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "searchedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["searchId", "storeId", "storeName", "searchedAt"]
+    },
+    "RecentStore": {
+      "title": "RecentStore",
+      "description": "Customer recently viewed store entry.",
+      "type": "object",
+      "properties": {
+        "storeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "storeImage": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "viewedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": ["storeId", "storeName", "viewedAt"]
+    }
+  },
+  "firestore": {
+    "/retailers/{retailerId}": {
+      "schema": "Retailer",
+      "description": "Verified merchant profiles with real confirmed coordinates and operational metadata."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer pickup and delivery orders with lifecycle status tracking."
+    },
+    "/automation_events/{eventId}": {
+      "schema": "AutomationEvent",
+      "description": "Event-driven stream of automation documents for Make.com with idempotency."
+    },
+    "/inventory/{inventoryId}": {
+      "schema": "InventoryItem",
+      "description": "Real-time merchant product stock counts with low-stock alerts."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Customer bookings and service consultations with local merchants."
+    },
+    "/chat_messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Customer and retailer chat messages."
+    },
+    "/daily_summaries/{summaryId}": {
+      "schema": "DailySummary",
+      "description": "Daily merchant revenue, order volume, and pickup reports in Asia/Kolkata timezone."
+    },
+    "/storeReviews/{reviewId}": {
+      "schema": "StoreReview",
+      "description": "Customer store ratings and reviews after completing an order."
+    },
+    "/productReviews/{reviewId}": {
+      "schema": "ProductReview",
+      "description": "Customer product ratings and reviews for purchased items."
+    },
+    "/products/{productId}": {
+      "schema": "ProductDoc",
+      "description": "Product rating metadata and averages."
+    },
+    "/customers/{customerId}/favoriteStores/{storeId}": {
+      "schema": "FavoriteStore",
+      "description": "Customer favorite stores synchronized across devices."
+    },
+    "/customers/{customerId}/storeSearchHistory/{searchId}": {
+      "schema": "StoreSearch",
+      "description": "Customer store search history entries."
+    },
+    "/customers/{customerId}/recentStores/{storeId}": {
+      "schema": "RecentStore",
+      "description": "Customer recently viewed store entries."
+    }
+  }
+}
